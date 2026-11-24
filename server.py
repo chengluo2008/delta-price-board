@@ -138,6 +138,71 @@ def fetch_grade_with_retry(grade_cn, attempts=3):
     raise RuntimeError(str(last_error) if last_error else "未知错误")
 
 
+# ---------------- 个别物品的价格纠正 ----------------
+# 数据站的「榜单」接口偶尔会张冠李戴：价格和它自己的「小时曲线」对不上。
+# 这里列出确认有问题的物品 id，改用小时曲线的最后一个点来算价格。
+# 目前只有「植物样本」有问题（榜单长期报 ~9.2 万，实际 ~1.8 万）。
+
+CHART_URL = "https://dergame.cn/api/Items/chartData"
+CHART_FIX_IDS = {
+    "15080050119": "植物样本",
+}
+
+
+def fetch_chart_prices(item_id, attempts=4):
+    """取某个物品近 7 天的小时均价序列（每行一个整点）。"""
+    payload = json.dumps({"itemId": item_id, "chartType": 7}).encode("utf-8")
+    last_error = None
+    for i in range(attempts):
+        try:
+            req = urlrequest.Request(CHART_URL, data=payload, headers=HEADERS, method="POST")
+            with urlrequest.urlopen(req, timeout=20) as resp:
+                data = json.loads(resp.read().decode("utf-8", errors="replace"))
+            prices = []
+            for point in data.get("values") or []:
+                try:
+                    prices.append(float(point["avg_price"]))
+                except (KeyError, TypeError, ValueError):
+                    continue
+            return prices
+        except Exception as exc:  # noqa: BLE001
+            last_error = exc
+            time.sleep(1.2 * (i + 1))
+    raise RuntimeError(str(last_error) if last_error else "未知错误")
+
+
+def apply_price_corrections(items):
+    """对被数据站标错的物品，用小时曲线覆盖价格和 7 日区间。"""
+    kept = []
+    for item in items:
+        if item["id"] not in CHART_FIX_IDS:
+            kept.append(item)
+            continue
+        try:
+            prices = fetch_chart_prices(item["id"])
+            if len(prices) < 5:
+                raise RuntimeError("曲线数据太少")
+            price = int(prices[-1])
+            low7, high7 = int(min(prices)), int(max(prices))
+            if price <= 0 or low7 <= 0:
+                raise RuntimeError("曲线价格异常")
+            item["price"] = price
+            item["low7"] = low7
+            item["high7"] = max(high7, price)
+            item["position"] = (
+                max(0, min(100, round((price - low7) / (high7 - low7) * 100)))
+                if high7 > low7 else 50
+            )
+            item["vsLow"] = round((price - low7) / low7 * 100, 1)
+            item["corrected"] = True
+            kept.append(item)
+            print("[fix] %s 价格已按小时曲线纠正为 %d" % (item["name"], price))
+        except Exception as exc:  # noqa: BLE001
+            # 纠正不了就别显示错误价格，宁可不显示
+            print("[warn] 纠正 %s 失败，本次先不显示这件：%s" % (item["name"], exc))
+    items[:] = kept
+
+
 # ---------------- 每个品质单独缓存 ----------------
 
 _cache = {}          # key -> {"items": [...], "updateTime": "...", "ts": 时间戳}
@@ -198,6 +263,7 @@ def get_grade(key, force=False):
             item = normalize_item(row, key)
             if item:
                 items.append(item)
+        apply_price_corrections(items)
         items.sort(key=lambda x: -x["price"])  # 统一从大到小
         entry = {"items": items, "updateTime": update_time, "ts": time.time()}
         with _cache_lock:

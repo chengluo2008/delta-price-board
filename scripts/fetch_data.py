@@ -22,7 +22,12 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from server import GRADE_CN, fetch_grade_with_retry, normalize_item  # noqa: E402
+from server import (  # noqa: E402
+    GRADE_CN,
+    apply_price_corrections,
+    fetch_grade_with_retry,
+    normalize_item,
+)
 
 OUT_DIR = os.path.join(ROOT, "docs", "data")
 ALL_GRADES = ("blue", "purple", "gold", "red")
@@ -36,6 +41,7 @@ def build_grade(key, attempts=4):
         item = normalize_item(row, key)
         if item:
             items.append(item)
+    apply_price_corrections(items)
     items.sort(key=lambda x: -x["price"])
     return {"ok": True, "grade": key, "updatedAt": update_time, "items": items}
 
