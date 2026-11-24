@@ -18,7 +18,6 @@ import json
 import os
 import sys
 import time
-from datetime import datetime, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -90,7 +89,6 @@ def main():
         "source": "DerGame 小Der数据报",
         "sourceUrl": "https://dergame.cn/?type=armory",
         "updatedAt": results["blue"].get("updatedAt") or results["purple"].get("updatedAt"),
-        "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
         "blue": results["blue"]["items"],
         "purple": results["purple"]["items"],
         "counts": {

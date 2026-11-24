@@ -233,7 +233,7 @@
     els.todayBadge.textContent = datePart(data.updatedAt);
 
     if (state.staticMode) {
-      els.refreshLine.innerHTML = "线上数据每 15 分钟自动更新";
+      els.refreshLine.innerHTML = "线上数据 · GitHub Pages 托管";
     } else {
       els.refreshLine.innerHTML = "页面每 <b>" + REFRESH_SECONDS + "</b> 秒自动刷新";
     }
