@@ -183,6 +183,15 @@
           setStatus("ok", result.staticMode ? "线上数据" : "实时数据");
           hideBanner();
         }
+
+        // 线上数据放太久没更新时，提醒一句
+        if (result.staticMode) {
+          var hours = dataAgeHours(data.updatedAt);
+          if (hours >= 24) {
+            showBanner("stale", "这份线上数据是 " + Math.round(hours) +
+              " 小时前的了。在电脑上双击「更新数据.bat」就能刷新。");
+          }
+        }
       })
       .catch(function (err) {
         setStatus("error", "连接失败");
@@ -270,6 +279,12 @@
     if (!text) return "今日";
     var m = String(text).match(/(\d{4})-(\d{2})-(\d{2})/);
     return m ? m[2] + "-" + m[3] : "今日";
+  }
+
+  function dataAgeHours(text) {
+    var time = Date.parse(String(text || "").replace(" ", "T"));
+    if (isNaN(time)) return 0;
+    return (Date.now() - time) / 3600000;
   }
 
   function updateTabs() {
