@@ -7,17 +7,31 @@
 - **蓝色品质**：全部变卖物，价格**从高到低**排好队
 - **紫色品质**：最便宜的那件，单独放一张大卡片
 - **金色 / 红色品质**：点页签切换查看（点开时才去取数）
-- **两种用法**：电脑上双击 `start.bat` 是实时数据；线上版靠 `更新数据.bat` 推送
+- **两种用法**：电脑上双击 `start.bat` 是实时数据；线上版每天 9:00 / 21:00 自动更新
 
 ---
 
 ## 一、线上版怎么用
 
 1. 手机或电脑浏览器打开：<https://chengluo2008.github.io/delta-price-board/>
-2. 数据要更新时，在电脑上**双击 `更新数据.bat`**，等它跑完（约半分钟）
-3. 大约 1 分钟后刷新网页，就是最新价格了
+2. **数据自动更新**：电脑上有一个 Windows 计划任务，每天 **9:00 和 21:00** 自动抓数据并发布（黑窗口不会弹出来）
+3. 想立刻更新：双击 `更新数据.bat`，等它跑完，约 1 分钟后刷新网页
 
-> 为什么不能全自动？因为全自动更新需要 GitHub 的 `workflow` 权限，而你这台电脑连不上 GitHub 网页（github.com 超时）。现在改用「电脑抓数据 → 通过 GitHub API 推送」的方式，绕开了网页登录。哪天你能登录 GitHub 网页了，2 分钟就能升级成全自动（见最后一节）。
+> 电脑关机 / 没登录时，那一次就跳过了；开机后如果错过了，Windows 会尽快补跑一次。
+
+<details>
+<summary>自动更新是怎么设的？想改时间或关掉怎么办？</summary>
+
+计划任务名字叫 **三角洲行动物价自动更新**，它调用 `scripts/run_hidden.vbs`，静默运行 `更新数据.bat /quiet`。
+
+- 看状态：开始菜单搜“任务计划程序”，左侧找到这个任务
+- 改时间：右键任务 → 属性 → 触发器 → 编辑
+- 关掉：右键任务 → 禁用（或删除）
+- 命令行查看：`schtasks /Query /TN "三角洲行动物价自动更新"`
+
+</details>
+
+> 为什么不能 15 分钟全自动？全自动需要 GitHub 的 `workflow` 权限，而你这台电脑连不上 GitHub 网页（github.com 超时）。现在改用「电脑抓数据 → 通过 GitHub API 推送」，绕开了网页登录。哪天能登录 GitHub 网页了，2 分钟就能升级（见最后一节）。
 
 ---
 
@@ -57,6 +71,9 @@ GitHub Pages 在国内网络时快时慢，多刷新几次，或者换个网络�
 **`更新数据.bat` 提示"发布失败"？**
 连不上 GitHub 的接口。数据已经存在本地了，等网络好点再双击一次。
 
+**计划任务怎么知道有没有跑？**
+`schtasks /Query /TN "三角洲行动物价自动更新" /V /FO LIST` 能看到"上次运行时间"和"上次结果"（0 就是成功）。也可以直接看线上网页顶部的「数据时间」。
+
 **双击后一闪就没了？**
 先打开一次 DeepSeek Harness 再双击（脚本要用它自带的 Python）。
 
@@ -82,7 +99,8 @@ sanjiaozhou/
 │  └─ data/*.json       ← 价格数据（由脚本生成）
 ├─ scripts/
 │  ├─ fetch_data.py     ← 抓取四种品质 → 写成 JSON
-│  └─ publish.py        ← 把改动通过 GitHub API 推送（替代 git push）
+│  ├─ publish.py        ← 把改动通过 GitHub API 推送（替代 git push）
+│  └─ run_hidden.vbs    ← 让计划任务静默运行，不弹黑窗口
 ├─ data/snapshot.json   ← 本地缓存快照（断网兜底，不进仓库）
 ├─ .github/workflows/   ← 全自动更新的配置（需要 workflow 权限才能启用）
 └─ README.md
@@ -120,6 +138,8 @@ sanjiaozhou/
 1. `fetch_data.py` 在你电脑上抓数据，写成 `docs/data/*.json`；
 2. `publish.py` 通过 `api.github.com` 把这些文件提交到仓库（这台电脑连不上 `github.com`，但 API 是通的）；
 3. GitHub Pages 发现仓库有更新，自动重新构建，网址不变。
+
+**定时：** Windows 计划任务每天 9:00、21:00 调用 `run_hidden.vbs`（隐藏窗口），它再执行 `更新数据.bat /quiet`，也就是上面 1、2 两步。
 
 **以后想升级成 15 分钟全自动**（电脑关机也更新）：
 需要一个有 `workflow` 权限的 GitHub 授权。拿到后把 `.github/workflows/update-prices.yml` 加进仓库，再把仓库 Settings → Pages 的 Source 改成「GitHub Actions」即可。到时候跟我说一声，我带你弄。
