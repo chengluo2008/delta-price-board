@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三角洲行动 · 变卖物行情</title>
+<meta name="description" content="三角洲行动手游收集品（变卖物）实时价格：蓝色品质从高到低排行，每日紫色品质最低价。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e11'/%3E%3Cpath d='M16 6l10 20H6z' fill='%23ff7a1a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="grid-bg" aria-hidden="true"></div>
+
+<div class="page">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">Δ</div>
+      <div class="brand-text">
+        <h1>三角洲行动 · 变卖物行情</h1>
+        <p>TRADING POST <span class="slash">/</span> 交易行实时价格</p>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="status" id="status" data-state="loading">
+        <span class="status-dot"></span>
+        <span class="status-text" id="statusText">连接数据…</span>
+      </div>
+      <div class="stamp">
+        <span class="stamp-label">数据时间</span>
+        <span class="stamp-value" id="updatedAt">--:--</span>
+      </div>
+      <button class="refresh" id="refreshBtn" type="button" title="立即重新拉取">
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>刷新</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden>
+    <span class="banner-icon">!</span>
+    <span id="bannerText">数据异常</span>
+    <button type="button" id="bannerRetry">重试</button>
+  </div>
+
+  <section class="kpis" aria-label="关键数据">
+    <div class="kpi">
+      <span class="kpi-label">蓝色变卖物</span>
+      <b class="kpi-value" id="kpiBlueCount">--</b>
+      <span class="kpi-sub">件在交易行</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">蓝色最高价</span>
+      <b class="kpi-value" id="kpiBlueMax">--</b>
+      <span class="kpi-sub" id="kpiBlueMaxName">--</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">蓝色最低价</span>
+      <b class="kpi-value" id="kpiBlueMin">--</b>
+      <span class="kpi-sub" id="kpiBlueMinName">--</span>
+    </div>
+    <div class="kpi kpi-accent">
+      <span class="kpi-label">紫色最低价 <em class="today-badge" id="todayBadge">今日</em></span>
+      <b class="kpi-value" id="kpiPurpleMin">--</b>
+      <span class="kpi-sub" id="kpiPurpleMinName">--</span>
+    </div>
+  </section>
+
+  <main class="layout">
+
+    <section class="panel panel-main" id="listPanel" data-grade="blue">
+      <div class="panel-head">
+        <div class="panel-title">
+          <span class="quality-dot blue" id="qualityDot"></span>
+          <h2 id="listTitle">蓝色品质 · 变卖物</h2>
+          <span class="panel-count" id="listCount">-- 件</span>
+        </div>
+        <div class="panel-tools">
+          <span class="sort-note">价格从高到低</span>
+          <div class="search">
+            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input type="search" id="searchInput" placeholder="搜索变卖物名称…" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs" id="tabs" role="tablist" aria-label="切换品质">
+        <button type="button" class="tab is-active" data-grade="blue" role="tab" aria-selected="true"><i class="q q-blue"></i>蓝色</button>
+        <button type="button" class="tab" data-grade="purple" role="tab" aria-selected="false"><i class="q q-purple"></i>紫色</button>
+        <button type="button" class="tab" data-grade="gold" role="tab" aria-selected="false"><i class="q q-gold"></i>金色</button>
+        <button type="button" class="tab" data-grade="red" role="tab" aria-selected="false"><i class="q q-red"></i>红色</button>
+      </div>
+
+      <div class="list-head" aria-hidden="true">
+        <span>#</span><span></span><span>名称</span><span>交易行最低价</span><span class="lh-range">近 7 日区间</span>
+      </div>
+
+      <ol class="rows" id="blueList">
+        <li class="skeleton-row"></li><li class="skeleton-row"></li><li class="skeleton-row"></li>
+        <li class="skeleton-row"></li><li class="skeleton-row"></li><li class="skeleton-row"></li>
+      </ol>
+
+      <div class="panel-foot">
+        <span id="blueFoot">等待数据…</span>
+        <span class="hint">价格 = 交易行当前最低挂单，单位：哈夫币</span>
+      </div>
+    </section>
+
+    <aside class="panel panel-purple">
+      <div class="panel-head">
+        <div class="panel-title">
+          <span class="quality-dot purple"></span>
+          <h2>紫色品质 · 今日最便宜</h2>
+        </div>
+      </div>
+
+      <div class="cheapest" id="cheapest">
+        <div class="cheapest-top">
+          <div class="cheapest-thumb" id="cheapestThumb"><span>◆</span></div>
+          <div class="cheapest-meta">
+            <span class="cheapest-name" id="cheapestName">--</span>
+            <span class="cheapest-tag">当前交易行最低价</span>
+          </div>
+        </div>
+        <div class="cheapest-price">
+          <b id="cheapestPrice">--</b><span class="unit">哈夫币</span>
+        </div>
+        <div class="cheapest-stats">
+          <div><span>近 7 日最低</span><b id="cheapestLow">--</b></div>
+          <div><span>近 7 日最高</span><b id="cheapestHigh">--</b></div>
+          <div><span>较7日低点</span><b id="cheapestVsLow" class="up">--</b></div>        </div>
+        <div class="range">
+          <div class="range-track"><i id="cheapestRangeFill"></i><b id="cheapestRangeDot"></b></div>
+          <div class="range-labels"><span>低</span><span>高</span></div>
+        </div>
+      </div>
+
+      <h3 class="subhead">紫色低价 TOP 5</h3>
+      <ol class="mini-rows" id="purpleTop">
+        <li class="mini-skeleton"></li><li class="mini-skeleton"></li><li class="mini-skeleton"></li>
+      </ol>
+
+      <p class="panel-note">
+        紫色品质共 <b id="purpleCount">--</b> 件，这里只列最便宜的 5 件；<br>
+        想找特定物品可以用左边的搜索框。
+      </p>
+    </aside>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-left">
+      <span>数据来源：<a href="https://dergame.cn/?type=armory" target="_blank" rel="noreferrer">DerGame 小Der数据报</a>（免费公益数据）</span>
+      <span class="sep">·</span>
+      <span id="refreshLine">页面每 <b id="refreshEvery">120</b> 秒自动刷新</span>
+      <span class="sep">·</span>
+      <span id="nextRefresh">下次刷新 --:--</span>
+    </div>
+    <div class="footer-right">
+      <span>价格仅供参考，以游戏内交易行为准</span>
+    </div>
+  </footer>
+
+  <details class="about">
+    <summary>数据说明 / 它是怎么工作的</summary>
+    <div class="about-body">
+      <p><b>变卖物</b>指游戏《三角洲行动》里主要用来卖钱换哈夫币的收集品。数据站会给每件物品标品质颜色：蓝色、紫色、金色、红色。</p>
+      <p><b>价格</b>取的是交易行当前最低挂单价格，随玩家挂单每分钟都在变。页面顶部的“数据时间”就是数据站最后一次更新价格的时间。</p>
+      <p><b>近 7 日区间</b>是过去 7 天里的最低价和最高价，圆点表示当前价格在这个区间里的位置——越靠左下越便宜，越靠右上越贵。</p>
+      <p>这个看板由本机的 Python 小程序提供：它替浏览器去数据站取数（浏览器直接取会被“跨域”策略拦下），拿到后缓存 3 分钟，并顺手存一份到 <code>data/snapshot.json</code>，断网时还能看到上一次的数据。</p>
+    </div>
+  </details>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

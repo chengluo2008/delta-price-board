@@ -1,12 +1,15 @@
-# 鏈満缂撳瓨锛屼笉闇€瑕佽繘浠撳簱
+# 本机缓存，不需要进仓库
 data/snapshot.json
 data/*.tmp
 __pycache__/
 *.pyc
 
-# 绯荤粺鍨冨溇
+# 系统垃圾
 Thumbs.db
 .DS_Store
+
+# 本机截图
+.preview/
 
 # 需要 GitHub 'workflow' 权限才能推送，暂时放在本机（以后拿到权限再启用）
 .github/workflows/
