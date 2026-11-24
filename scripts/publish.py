@@ -103,6 +103,31 @@ def collect_files():
     return sorted(files)
 
 
+def kick_rebuild_if_failed():
+    """GitHub Pages 偶尔会构建失败（status=errored），自动补触发一次。"""
+    time.sleep(20)
+    try:
+        build = api("GET", "/repos/%s/pages/builds/latest" % REPO)
+    except Exception:  # noqa: BLE001
+        return
+    status = build.get("status")
+    if status != "errored":
+        print("Pages 构建状态：%s" % (status or "未知"))
+        return
+    print("Pages 构建失败了，自动重试一次…")
+    try:
+        api("POST", "/repos/%s/pages/builds" % REPO, {})
+    except Exception as exc:  # noqa: BLE001
+        print("重试失败：%s" % exc)
+        return
+    time.sleep(15)
+    try:
+        build = api("GET", "/repos/%s/pages/builds/latest" % REPO)
+        print("重试后状态：%s" % (build.get("status") or "未知"))
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def main():
     head = api("GET", "/repos/%s/git/ref/heads/%s" % (REPO, BRANCH))
     parent = head["object"]["sha"]
@@ -148,6 +173,7 @@ def main():
 
     print("已发布：https://github.com/%s/commit/%s" % (REPO, new_commit["sha"][:7]))
     print("1 分钟左右 GitHub Pages 会重新构建，网址不变。")
+    kick_rebuild_if_failed()
     return 0
 
 
